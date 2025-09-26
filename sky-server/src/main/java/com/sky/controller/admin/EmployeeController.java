@@ -1,23 +1,27 @@
 package com.sky.controller.admin;
 
 import com.sky.constant.JwtClaimsConstant;
+import com.sky.dto.EmployeeDTO;
 import com.sky.dto.EmployeeLoginDTO;
+import com.sky.dto.EmployeePageQueryDTO;
 import com.sky.entity.Employee;
 import com.sky.properties.JwtProperties;
+import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.EmployeeService;
 import com.sky.utils.JwtUtil;
 import com.sky.vo.EmployeeLoginVO;
+import io.jsonwebtoken.Claims;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.HttpRequestHandler;
+import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,6 +37,9 @@ public class EmployeeController {
     private EmployeeService employeeService;
     @Autowired
     private JwtProperties jwtProperties;
+    /*//获取当前操作用户的token
+    @Autowired
+    private HttpServletRequest httpServletRequest;*/
 
     /**
      * 登录
@@ -74,6 +81,42 @@ public class EmployeeController {
     @ApiOperation(value = "员工退出登录接口")
     public Result<String> logout() {
         return Result.success();
+    }
+
+    /**
+     * 新增员工
+     *
+     * @param employeeDTO
+     * @return
+     */
+    @PostMapping()
+    @ApiOperation(value = "新增员工")
+    public Result addEmployee(@RequestBody EmployeeDTO employeeDTO) {
+        log.info("新增员工：{}", employeeDTO);
+
+       /* //获取当前的操作人id
+        String token = httpServletRequest.getHeader("token");
+        Claims claims = JwtUtil.parseJWT(jwtProperties.getAdminSecretKey(),token );
+        log.info("当前操作用户id：{}", claims.get(JwtClaimsConstant.EMP_ID));*/
+
+        employeeService.addEmployee(employeeDTO);
+
+        return Result.success();
+    }
+
+    /**
+     * 分页查询员工
+     * @param employeePageQueryDTO
+     * @return
+     */
+    @GetMapping("/page")
+    @ApiOperation(value = "分页查询员工")
+    public Result<PageResult> queryPageEmployee(EmployeePageQueryDTO employeePageQueryDTO) {
+        log.info("查询参数为: {}", employeePageQueryDTO);
+
+        PageResult<Employee> list= employeeService.queryPage(employeePageQueryDTO);
+
+        return Result.success(list);
     }
 
 }
