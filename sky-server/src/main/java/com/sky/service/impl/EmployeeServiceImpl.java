@@ -9,6 +9,7 @@ import com.sky.context.BaseContext;
 import com.sky.dto.EmployeeDTO;
 import com.sky.dto.EmployeeLoginDTO;
 import com.sky.dto.EmployeePageQueryDTO;
+import com.sky.dto.PasswordEditDTO;
 import com.sky.entity.Employee;
 import com.sky.exception.AccountLockedException;
 import com.sky.exception.AccountNotFoundException;
@@ -94,6 +95,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     /**
      * 分页逻辑实现
+     *
      * @param employeePageQueryDTO
      * @return
      */
@@ -102,9 +104,84 @@ public class EmployeeServiceImpl implements EmployeeService {
         //开启分页
         PageHelper.startPage(employeePageQueryDTO.getPage(), employeePageQueryDTO.getPageSize());
         //匹配姓名
-        Page<Employee> employees = (Page<Employee>) employeeMapper.queyByName(employeePageQueryDTO.getName());
+        Page<Employee> employees = (Page<Employee>) employeeMapper.queryByName(employeePageQueryDTO.getName());
         //返回数据
         return new PageResult<>(employees.getTotal(), employees.getResult());
+    }
+
+    @Override
+    public void setStatus(Long id, Integer status) {
+
+        /*Employee employee=new Employee();
+        employee.setId(id);
+        employee.setStatus(status);
+        employee.setUpdateTime(LocalDateTime.now());
+        employee.setUpdateUser(BaseContext.getCurrentId());*/
+        //封装
+        Employee employee = Employee.builder()
+                .id(id)
+                .status(status)
+                .updateTime(LocalDateTime.now())
+                .updateUser(BaseContext.getCurrentId())
+                .build();
+
+        employeeMapper.update(employee);
+
+    }
+
+    @Override
+    public void updateEmployee(EmployeeDTO employeeDTO) {
+        //将DTO转换为实体类 、将其他属性赋值
+        Employee employee = new Employee();
+        BeanUtils.copyProperties(employeeDTO, employee);
+
+        employee.setUpdateTime(LocalDateTime.now());
+        employee.setUpdateUser(BaseContext.getCurrentId());
+
+        employeeMapper.update(employee);
+
+    }
+
+    /**
+     * 根据id查询员工
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    public Employee queryById(Long id) {
+        return employeeMapper.selectById(id);
+    }
+
+    /**
+     * 修改员工密码
+     *
+     * @param passwordEditDTO
+     */
+    @Override
+    public void editPassword(PasswordEditDTO passwordEditDTO) {
+        //将DTO转换为实体类 、将其他属性赋值
+        Employee employee = Employee.builder()
+                .id(BaseContext.getCurrentId())
+                .password(passwordEditDTO.getOldPassword())
+                .build();
+
+        //密码比对
+        String password = DigestUtils.md5DigestAsHex(employee.getPassword().getBytes());
+        Employee employeeFlag = employeeMapper.selectById(employee.getId());
+
+        //校验密码是否正确 错误抛出异常
+        if (!employeeFlag.getPassword().equals(password)) {
+            throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
+        }
+
+        //密码正确，修改密码
+        password = DigestUtils.md5DigestAsHex(passwordEditDTO.getNewPassword().getBytes());
+        employee.setPassword(password);
+        employee.setUpdateTime(LocalDateTime.now());
+        employee.setUpdateUser(BaseContext.getCurrentId());
+        employeeMapper.update(employee);
+
     }
 
 }

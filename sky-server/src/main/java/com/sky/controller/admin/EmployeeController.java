@@ -4,6 +4,7 @@ import com.sky.constant.JwtClaimsConstant;
 import com.sky.dto.EmployeeDTO;
 import com.sky.dto.EmployeeLoginDTO;
 import com.sky.dto.EmployeePageQueryDTO;
+import com.sky.dto.PasswordEditDTO;
 import com.sky.entity.Employee;
 import com.sky.properties.JwtProperties;
 import com.sky.result.PageResult;
@@ -106,6 +107,7 @@ public class EmployeeController {
 
     /**
      * 分页查询员工
+     *
      * @param employeePageQueryDTO
      * @return
      */
@@ -114,9 +116,75 @@ public class EmployeeController {
     public Result<PageResult> queryPageEmployee(EmployeePageQueryDTO employeePageQueryDTO) {
         log.info("查询参数为: {}", employeePageQueryDTO);
 
-        PageResult<Employee> list= employeeService.queryPage(employeePageQueryDTO);
+        PageResult<Employee> list = employeeService.queryPage(employeePageQueryDTO);
 
         return Result.success(list);
+    }
+
+    /**
+     * 修改员工状态
+     *
+     * @param id
+     * @return
+     */
+    @PostMapping("/status/{status}")
+    @ApiOperation("修改员工状态")
+    public Result setStatus(Long id, @PathVariable Integer status) {
+        log.info("修改id为{}员工状态：{}", id, status);
+
+        employeeService.setStatus(id, status);
+
+        return Result.success();
+    }
+
+    /**
+     * 修改员工信息
+     *
+     * @param employeeDTO
+     * @return
+     */
+    @PutMapping
+    @ApiOperation("修改员工信息")
+    public Result updateEmployee(@RequestBody EmployeeDTO employeeDTO) {
+
+        log.info("修改员工x信息为：{}", employeeDTO);
+
+        employeeService.updateEmployee(employeeDTO);
+
+        return Result.success();
+    }
+
+    /**
+     * 根据id查询员工信息
+     *
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}")
+    @ApiOperation("根据id查询员工信息")
+    public Result<Employee> queryEmployeeById(@PathVariable Long id) {
+
+        log.info("查询员工id为 ：{}", id);
+        Employee employee = employeeService.queryById(id);
+        //密码隐藏
+        employee.setPassword("*****");
+
+        return Result.success(employee);
+    }
+
+    /**
+     * 修改员工密码
+     * @param passwordEditDTO
+     * @return
+     */
+    @PutMapping("/editPassword")
+    @ApiOperation("修改员工密码")
+    public Result editPassword(@RequestBody PasswordEditDTO passwordEditDTO){
+        log.info("修改密码的员工信息为：{}",passwordEditDTO);
+
+        employeeService.editPassword(passwordEditDTO);
+
+        return Result.success();
     }
 
 }
