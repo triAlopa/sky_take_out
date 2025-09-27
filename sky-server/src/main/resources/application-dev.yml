@@ -8,6 +8,4 @@ sky:
     password: 06170018
   alioss:
     endpoint: oss-cn-beijing.aliyuncs.com
-    access-key-id:
-    bucket-name:
-    access-key-secret:
+
