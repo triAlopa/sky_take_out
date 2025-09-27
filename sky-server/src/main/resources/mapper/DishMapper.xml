@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sky.mapper.DishMapper">
+    <delete id="delByIds">
+        delete from dish where id in
+        <foreach collection="ids" item="i" separator="," open="(" close=")">
+            #{i.id}
+        </foreach>
+    </delete>
+
+    <select id="query" resultType="com.sky.vo.DishVO">
+        SELECT d.*,c.name as categoryName from dish d left outer join category c on d.category_id=c.id
+        <where>
+            <if test=" name!=null and name !='' ">d.name like concat('%', #{name} ,'%' ) </if>
+            <if test=" status!=null ">and d.status=#{status} </if>
+            <if test=" categoryId!=null ">and d.category_id=#{categoryId} </if>
+        </where>
+    </select>
+</mapper>
