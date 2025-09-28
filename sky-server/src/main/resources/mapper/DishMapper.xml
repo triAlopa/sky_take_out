@@ -30,6 +30,7 @@
             <if test=" status!=null ">and d.status=#{status} </if>
             <if test=" categoryId!=null ">and d.category_id=#{categoryId} </if>
         </where>
+        order by d.create_time desc
     </select>
 
     <resultMap id="DishWithFlavorRsMap" type="com.sky.vo.DishVO">
