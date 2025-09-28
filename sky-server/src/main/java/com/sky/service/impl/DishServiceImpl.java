@@ -26,14 +26,21 @@ import java.util.List;
 
 @Service
 public class DishServiceImpl implements DishService {
+    //菜品Mapper
     @Autowired
     private DishMapper dishMapper;
+    //菜品口味Mapper
     @Autowired
     private DishFlavorMapper dishFlavorMapper;
+    //套餐菜品Mapper
     @Autowired
     private SetmealDishMapper setmealDishMapper;
 
 
+    /**
+     * 新增菜品 with 口味
+     * @param dishDTO
+     */
     @Transactional
     @Override
     public void saveWithFlavor(DishDTO dishDTO) {
@@ -77,6 +84,7 @@ public class DishServiceImpl implements DishService {
 
     /**
      * 批量删除菜品
+     *
      * @param ids
      */
     @Transactional
@@ -103,5 +111,64 @@ public class DishServiceImpl implements DishService {
             dishFlavorMapper.delByDishId(id);
         }
 
+    }
+
+    /**
+     * 根据id查询菜品 with 口味
+     * 修改数据回显
+     * @param id
+     * @return
+     */
+    @Override
+    public DishVO queryById(Long id) {
+        return dishMapper.queryWithFlavorById(id);
+    }
+
+    /**
+     * 修改菜品 with 口味
+     * @param dishDTO
+     */
+    @Transactional(rollbackFor = {Exception.class})
+    @Override
+    public void updateWithFlavor(DishDTO dishDTO) {
+        Dish dish = new Dish();
+
+        BeanUtils.copyProperties(dishDTO, dish);
+
+        dishMapper.update(dish);
+
+        //先对目标id的原有口味删除，再添加
+        dishFlavorMapper.delByDishId(dish.getId());
+        List<DishFlavor> flavors = dishDTO.getFlavors();
+        //设置逻辑外键 菜品id
+        if (flavors != null && flavors.size() > 0) {
+            for (DishFlavor flavor : flavors) {
+                flavor.setDishId(dish.getId());
+            }
+            dishFlavorMapper.insertList(flavors);
+        }
+    }
+
+    /**
+     * 修改菜品状态
+     * @param status
+     * @param id
+     */
+    @Override
+    public void setStatus(Integer status, Long id) {
+        Dish dish = Dish.builder()
+                .id(id)
+                .status(status).build();
+        dishMapper.update(dish);
+    }
+
+    /**
+     * 根据菜品分类id查询菜品
+     * @param categoryId
+     * @return
+     */
+    @Override
+    public List<Dish> queryByCategoryId(Long categoryId) {
+        return dishMapper.queryByCategoryId(categoryId);
     }
 }

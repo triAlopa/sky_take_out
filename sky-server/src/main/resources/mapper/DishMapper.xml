@@ -2,10 +2,24 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.sky.mapper.DishMapper">
+    <update id="update">
+        update dish
+        <set>
+            <if test=" name!=null and name !='' "> name=#{name},</if>
+            <if test=" categoryId!=null "> category_id=#{categoryId},</if>
+            <if test=" price!=null "> price=#{price},</if>
+            <if test=" image!=null "> image=#{image},</if>
+            <if test=" description !=null and  description!='' "> description=#{description},</if>
+            <if test=" status!=null "> status=#{status},</if>
+            <if test=" updateTime!=null "> update_time=#{updateTime},</if>
+            <if test=" updateUser!=null "> update_user=#{updateUser}</if>
+        </set>
+        where id=#{id}
+    </update>
     <delete id="delByIds">
         delete from dish where id in
-        <foreach collection="ids" item="i" separator="," open="(" close=")">
-            #{i.id}
+        <foreach collection="ids" item="id" separator="," open="(" close=")">
+            #{id}
         </foreach>
     </delete>
 
@@ -16,5 +30,30 @@
             <if test=" status!=null ">and d.status=#{status} </if>
             <if test=" categoryId!=null ">and d.category_id=#{categoryId} </if>
         </where>
+    </select>
+
+    <resultMap id="DishWithFlavorRsMap" type="com.sky.vo.DishVO">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="price" column="price"/>
+        <result property="image" column="image"/>
+        <result property="description" column="description"/>
+        <result property="status" column="status"/>
+        <result property="categoryName" column="categoryName"/>
+        <result property="updateTime" column="update_time"/>
+        <collection property="flavors" ofType="com.sky.entity.DishFlavor">
+            <result property="id" column="id"/>
+            <result property="name" column="name"/>
+            <result property="value" column="value"/>
+            <result property="dishId" column="dishId"/>
+        </collection>
+    </resultMap>
+    <select id="queryWithFlavorById" resultMap="DishWithFlavorRsMap">
+        select d.*, df.*, c.name as categoryName
+        from dish as d
+                 left join dish_flavor df on d.id = df.dish_id
+                 left join category c on d.category_id = c.id
+        where d.id = #{id}
     </select>
 </mapper>

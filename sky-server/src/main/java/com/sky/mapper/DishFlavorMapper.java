@@ -26,6 +26,10 @@ public interface DishFlavorMapper {
     @Select("select status from dish where id = #{id}")
     Integer queryStatus(Long id);
 
+    /**
+     * 根据菜品id删除口味
+     * @param id
+     */
     @Delete(" delete from dish_flavor where dish_id=#{id}")
     void delByDishId(Long id);
 }
