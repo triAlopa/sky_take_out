@@ -1,6 +1,8 @@
 package com.sky.mapper;
 
 import com.sky.entity.SetmealDish;
+import com.sky.vo.DishItemVO;
+import com.sky.vo.DishVO;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
@@ -43,4 +45,20 @@ public interface SetmealDishMapper {
      * @param ids
      */
     void delBySetmealIds(List<Integer> ids);
+
+    /**
+     * 根据分类id查询菜品 with 口味
+     * @param categoryId
+     * @return
+     * */
+    List<DishVO> userQueryByCategoryId(Long categoryId);
+
+    /**
+     * 根据套餐id查询菜品
+     * @param id
+     * @return
+     */
+    @Select("select d.image as image,d.name as name,sd.copies as copies,d.description as description " +
+            " from setmeal_dish as sd left join dish as d on sd.dish_id = d.id where sd.setmeal_id=#{id}")
+    List<DishItemVO> selectBySetmealId(Long id);
 }

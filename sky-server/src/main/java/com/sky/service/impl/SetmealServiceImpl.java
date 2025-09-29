@@ -174,4 +174,14 @@ public class SetmealServiceImpl implements SetmealService {
         }
 
     }
+
+    /**
+     * 根据分类id查套餐
+     * @param id
+     * @return
+     */
+    @Override
+    public List<Setmeal> selectByCategoryId(Integer id) {
+      return setmealMapper.selectByCategoryId(id);
+    }
 }

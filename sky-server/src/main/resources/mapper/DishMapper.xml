@@ -57,4 +57,11 @@
                  left join category c on d.category_id = c.id
         where d.id = #{id}
     </select>
+    <select id="listWithFlavor" resultMap="DishWithFlavorRsMap">
+        select d.*, df.*, c.name as categoryName
+        from dish as d
+                 left join category c on d.category_id = c.id
+                 right join  dish_flavor df on d.id = df.dish_id
+        where d.category_id = #{categoryId}
+    </select>
 </mapper>

@@ -22,4 +22,8 @@
             #{id}
         </foreach>
     </select>
+    <select id="userQueryByCategoryId" resultType="com.sky.vo.DishVO">
+        select  * from setmeal_dish as  sd left join dish as d on d.id=sd.dish_id
+        where d.category_id=#{categoryId}
+    </select>
 </mapper>

@@ -69,4 +69,12 @@ public interface SetmealMapper {
      * @param ids
      */
     void delByIds(List<Integer> ids);
+
+    /**
+     * 根据分类id查看套餐
+     * @param id
+     * @return
+     */
+    @Select("select * from setmeal where category_id = #{id}")
+    List<Setmeal> selectByCategoryId(Integer id);
 }
