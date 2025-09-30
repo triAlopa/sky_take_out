@@ -61,7 +61,7 @@
         select d.*, df.*, c.name as categoryName
         from dish as d
                  left join category c on d.category_id = c.id
-                 right join  dish_flavor df on d.id = df.dish_id
-        where d.category_id = #{categoryId}
+                 left join  dish_flavor df on d.id = df.dish_id
+        where d.category_id = #{categoryId} and d.status=1 and c.status=1
     </select>
 </mapper>

@@ -75,6 +75,6 @@ public interface SetmealMapper {
      * @param id
      * @return
      */
-    @Select("select * from setmeal where category_id = #{id}")
+    @Select("select * from setmeal where category_id = #{id} and status=1")
     List<Setmeal> selectByCategoryId(Integer id);
 }

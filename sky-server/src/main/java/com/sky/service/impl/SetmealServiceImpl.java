@@ -126,8 +126,8 @@ public class SetmealServiceImpl implements SetmealService {
      */
     @Override
     public void setStatus(Integer status, Long id) {
-        //判断是否为未启用状态
-        if (status == StatusConstant.DISABLE) {
+        //判断是否为未启用状态 如果为要修改为起售状态要校验
+        if (status == StatusConstant.ENABLE) {
             //查询套餐下的菜品
             List<SetmealDish> setmealDishes = setmealDishMapper.queryBySetmealId(id);
             //判断是否有菜品

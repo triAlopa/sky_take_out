@@ -11,9 +11,11 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @Slf4j
@@ -23,6 +25,8 @@ public class DishController {
 
     @Autowired
     private DishService dishService;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
      * 新增菜品
@@ -34,6 +38,10 @@ public class DishController {
     @PostMapping
     public Result save(@RequestBody DishDTO dishDTO) {
         log.info("新增菜品: {}", dishDTO);
+
+        //判断添加了某一个菜品，则清楚 在redis下这个key的数据，保证用户端和管理端的一致性
+        String key="dish_"+dishDTO.getCategoryId();
+        redisTemplate.delete(key);
 
         dishService.saveWithFlavor(dishDTO);
 
@@ -66,6 +74,8 @@ public class DishController {
         log.info("批量删除菜品: {}", ids);
 
         dishService.deleteWithFlavor(ids);
+        //清楚所有菜品缓存数据
+        clearCache("dish_*");
 
         return Result.success();
     }
@@ -95,6 +105,8 @@ public class DishController {
         log.info("修改菜品: {}", dishDTO);
 
         dishService.updateWithFlavor(dishDTO);
+        //清楚所有菜品缓存数据
+        clearCache("dish_*");
 
         return Result.success();
     }
@@ -111,6 +123,8 @@ public class DishController {
         log.info("修改菜品状态: {},{}", status, id);
 
         dishService.setStatus(status, id);
+        //清楚所有菜品缓存数据
+        clearCache("dish_*");
 
         return Result.success();
     }
@@ -128,5 +142,11 @@ public class DishController {
         List<Dish> dishList = dishService.queryByCategoryId(categoryId);
 
         return Result.success(dishList);
+    }
+
+    //清楚 redis缓存里面的所有菜品数据
+    private void clearCache(String pattern){
+        Set keys = redisTemplate.keys(pattern);
+        redisTemplate.delete(keys);
     }
 }
