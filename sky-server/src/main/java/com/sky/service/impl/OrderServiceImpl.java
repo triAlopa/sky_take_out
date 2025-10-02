@@ -1,5 +1,7 @@
 package com.sky.service.impl;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
@@ -14,6 +16,7 @@ import com.sky.mapper.*;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.OrderService;
+import com.sky.utils.HttpClientUtil;
 import com.sky.utils.WeChatPayUtil;
 import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderStatisticsVO;
@@ -22,15 +25,18 @@ import com.sky.vo.OrderVO;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -49,6 +55,62 @@ public class OrderServiceImpl implements OrderService {
     private UserMapper userMapper;
     @Autowired
     private WeChatPayUtil weChatPayUtil;
+    @Value("${sky.shop.address}")
+    private String shopAddress;
+
+    @Value("${sky.baidu.ak}")
+    private String ak;
+
+    public void checkOutOfRange(String address) throws IOException {
+        Map map = new HashMap<>();
+        map.put("address", shopAddress);
+        map.put("ak", ak);
+        map.put("output", "json");
+
+        String shopCoordinate = HttpClientUtil.doPost("http://api.map.baidu.com/reverse_geocoding/v3/", map);
+        JSONObject jsonObject = JSON.parseObject(shopCoordinate);
+        if (jsonObject.get("status").equals(0)) {
+            throw new OrderBusinessException("店铺经纬度解析失败");
+        }
+
+        JSONObject location = jsonObject.getJSONObject("result").getJSONObject("location");
+        String lat = location.getString("lat");
+        String lng = location.getString("lng");
+        //店铺经纬度坐标
+        String shopLngLat = lat + "," + lng;
+
+        map.put("address", address);
+        String userCoordinate = HttpClientUtil.doPost("http://api.map.baidu.com/reverse_geocoding/v3/", map);
+        jsonObject = JSON.parseObject(userCoordinate);
+        if (jsonObject.get("status").equals(0)) {
+            throw new OrderBusinessException("用户经纬度解析失败");
+        }
+        location = jsonObject.getJSONObject("result").getJSONObject("location");
+        lat = location.getString("lat");
+        lng = location.getString("lng");
+        //用户经纬度坐标
+        String userLngLat = lat + "," + lng;
+
+        map.put("origin",shopLngLat);
+        map.put("destination",userLngLat);
+        map.put("steps_info","0");
+
+        //路线规划
+        String json = HttpClientUtil.doGet("https://api.map.baidu.com/directionlite/v1/driving", map);
+        jsonObject = JSON.parseObject(json);
+        if (jsonObject.get("status").equals(0)) {
+            throw new OrderBusinessException("路线规划解析失败");
+        }
+        //获取距离
+        JSONObject result = jsonObject.getJSONObject("result");
+        JSONArray routes = (JSONArray) result.get("routes");
+        Integer distance = (Integer) ((JSONObject) routes.get(0)).get("distance");
+        if(distance>5000){
+            throw new OrderBusinessException("超出配送范围");
+        }
+
+    }
+
 
     /**
      * 添加订单
@@ -390,6 +452,9 @@ public class OrderServiceImpl implements OrderService {
     public void confirmOrder(OrdersConfirmDTO ordersConfirmDTO) {
         //查找订单
         Orders orders = orderMapper.selectById(ordersConfirmDTO.getId());
+        if (orders == null && orders.getPayStatus() != Orders.PAID) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
         //更新状态
         orders.setStatus(Orders.CONFIRMED);
 //        //立即送出
@@ -408,7 +473,7 @@ public class OrderServiceImpl implements OrderService {
         //查找订单
         Orders orders = orderMapper.selectById(ordersRejectionDTO.getId());
         //只有待接单才可以拒绝
-        if (orders == null || !orders.getOrderTime().equals(Orders.REFUND)) {
+        if (orders == null || !orders.getStatus().equals(Orders.REFUND)) {
             throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
         }
         //更新支付状态
@@ -459,7 +524,7 @@ public class OrderServiceImpl implements OrderService {
         //查找订单
         Orders orders = orderMapper.selectById(id);
         //没有支付不可以派送
-        if (orders == null || orders.getStatus() != Orders.PAID) {
+        if (orders == null || orders.getPayStatus() != Orders.PAID) {
             throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
         }
         //没有接单不可以完成
