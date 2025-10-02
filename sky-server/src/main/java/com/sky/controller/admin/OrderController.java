@@ -138,7 +138,6 @@ public class OrderController {
         return Result.success();
     }
 
-    //
     /**
      * 完成订单
      *
@@ -155,61 +154,4 @@ public class OrderController {
         return Result.success();
     }
 
-
-
-
-
-
-//    /**
-//     * 再来一单
-//     */
-//    @PostMapping("repetition/{id}")
-//    @ApiOperation("再来一单")
-//    public Result repetition(@PathVariable Long id) {
-//        log.info("再来一单，订单id：{}", id);
-//
-//        orderService.repetitionOrder(id);
-//
-//        return Result.success();
-//    }
-//
-//    /**
-//     * 查询订单详情
-//     * @param id
-//     * @return
-//     */
-//    @ApiOperation("查询订单详情")
-//    @GetMapping("/orderDetail/{id}")
-//    public Result<OrderVO> orderDetail(@PathVariable Long id) {
-//        log.info("查询订单详情，订单id：{}", id);
-//
-//        OrderVO orderVO = orderService.queryByOrderId(id);
-//
-//        return Result.success(orderVO);
-//    }
-//
-//    @ApiOperation("用户催单")
-//    @GetMapping("reminder/{id}")
-//    public Result reminder(@PathVariable Long id) {
-//        log.info("用户催单，订单id：{}", id);
-//
-//        orderService.reminderByOrderId(id);
-//
-//        return Result.success();
-//    }
-//
-//    /**
-//     * 用户取消订单
-//     * @param id
-//     * @return
-//     */
-//    @ApiOperation("用户取消订单")
-//    @PutMapping("/cancel/{id}")
-//    public Result cancelOrder(@PathVariable Long id) {
-//        log.info("用户取消订单，订单id：{}", id);
-//
-//        orderService.cancelOrderById(id);
-//
-//        return Result.success();
-//    }
 }

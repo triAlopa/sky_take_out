@@ -33,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -193,6 +194,11 @@ public class OrderServiceImpl implements OrderService {
 
     }
 
+    /**
+     * 再来一单 直接下单的那种 待支付
+     *
+     * @param id
+     */
     @Transactional(rollbackFor = {Exception.class})
     @Override
     public void repetitionOrder(Long id) {
@@ -243,6 +249,12 @@ public class OrderServiceImpl implements OrderService {
 
     }
 
+    /**
+     * 查询某个订单详情
+     *
+     * @param id
+     * @return
+     */
     @Override
     public OrderVO queryByOrderId(Long id) {
         Orders orders = orderMapper.selectById(id);
@@ -254,6 +266,8 @@ public class OrderServiceImpl implements OrderService {
         OrderVO orderVO = new OrderVO();
         if (details != null && details.size() > 0) {
             orderVO.setOrderDetailList(details);
+            String dishNames = getOrderDishName(details);
+            orderVO.setOrderDishes(dishNames);
         }
         BeanUtils.copyProperties(orders, orderVO);
 
@@ -284,6 +298,10 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public void cancelOrderById(Long id) {
         Orders orders = orderMapper.selectById(id);
+        //状态>2就不可以取消订单 接单以后不可以取消
+        if (orders == null || orders.getStatus() > 2) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
         //设置为取消订单
         orders.setStatus(Orders.CANCELLED);
         if (orders.getPayStatus() == Orders.PAID) {
@@ -295,6 +313,7 @@ public class OrderServiceImpl implements OrderService {
 //        orders.setAmount(BigDecimal.valueOf(0));
         //取消订单时间
         orders.setCancelTime(LocalDateTime.now());
+        orders.setCancelReason("用户取消");
         //修改订单
         orderMapper.update(orders);
     }
@@ -342,8 +361,24 @@ public class OrderServiceImpl implements OrderService {
         PageHelper.startPage(ordersPageQueryDTO.getPage(), ordersPageQueryDTO.getPageSize());
 
         Page<OrderVO> orders = (Page<OrderVO>) orderMapper.select(ordersPageQueryDTO);
+        //添加菜品信息字段
+        orders.forEach(order -> {
+            String dishNames = getOrderDishName(order.getOrderDetailList());
+            order.setOrderDishes(dishNames);
+        });
+
 
         return new PageResult<>(orders.getTotal(), orders.getResult());
+    }
+
+    //遍历拼接菜品或者套餐名
+    private String getOrderDishName(List<OrderDetail> orderDetailList) {
+        List<String> dishNames = orderDetailList.stream().map(orderDetail -> {
+            String dishName = orderDetail.getName() + "*" + orderDetail.getNumber() + ";";
+            return dishName;
+        }).collect(Collectors.toList());
+        //将菜名拼接一起
+        return String.join("", dishNames);
     }
 
     /**
@@ -356,7 +391,7 @@ public class OrderServiceImpl implements OrderService {
         //查找订单
         Orders orders = orderMapper.selectById(ordersConfirmDTO.getId());
         //更新状态
-        orders.setStatus(ordersConfirmDTO.getStatus());
+        orders.setStatus(Orders.CONFIRMED);
 //        //立即送出
 //        orders.setDeliveryStatus(1);
 
@@ -372,6 +407,10 @@ public class OrderServiceImpl implements OrderService {
     public void rejectionOrder(OrdersRejectionDTO ordersRejectionDTO) {
         //查找订单
         Orders orders = orderMapper.selectById(ordersRejectionDTO.getId());
+        //只有待接单才可以拒绝
+        if (orders == null || !orders.getOrderTime().equals(Orders.REFUND)) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
         //更新支付状态
         orders.setPayStatus(Orders.REFUND);
         //更新状态 取消
@@ -420,7 +459,11 @@ public class OrderServiceImpl implements OrderService {
         //查找订单
         Orders orders = orderMapper.selectById(id);
         //没有支付不可以派送
-        if (orders.getStatus() != Orders.PAID) {
+        if (orders == null || orders.getStatus() != Orders.PAID) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+        //没有接单不可以完成
+        if (!orders.getStatus().equals(Orders.CONFIRMED)) {
             throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
         }
 
@@ -436,12 +479,17 @@ public class OrderServiceImpl implements OrderService {
 
     /**
      * 完成订单
+     *
      * @param id
      */
     @Override
     public void completeOrder(Long id) {
         //查找订单
         Orders orders = orderMapper.selectById(id);
+        //没有派送不可以完成
+        if (orders == null || !orders.getStatus().equals(Orders.DELIVERY_IN_PROGRESS)) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
         //更新状态
         orders.setStatus(Orders.COMPLETED);
         //设置送达时间
