@@ -32,6 +32,12 @@
             <if test="checkoutTime != null">
                 checkout_time=#{checkoutTime},
             </if>
+            <if test="amount != null">
+                amount=#{amount},
+            </if>
+            <if test="deliveryStatus != null">
+                delivery_status=#{deliveryStatus},
+            </if>
             <if test="status != null">
                 status = #{status},
             </if>
@@ -41,4 +47,53 @@
         </set>
         where id = #{id}
     </update>
+    <resultMap id="Orders" type="com.sky.vo.OrderVO">
+        <id property="id" column="id"/>
+        <result property="number" column="number"/>
+        <result property="status" column="status"/>
+        <result property="userId" column="user_id"/>
+        <result property="addressBookId" column="address_book_id"/>
+        <result property="checkoutTime" column="checkout_time"/>
+        <result property="payMethod" column="pay_method"/>
+        <result property="payStatus" column="pay_status"/>
+        <result property="amount" column="amount"/>
+        <result property="remark" column="remark"/>
+        <result property="phone" column="phone"/>
+        <result property="orderTime" column="order_time"/>
+        <result property="address" column="address"/>
+        <result property="userName" column="user_name"/>
+        <result property="consignee" column="consignee"/>
+        <result property="cancelReason" column="cancel_reason"/>
+        <result property="rejectionReason" column="rejection_reason"/>
+        <result property="cancelTime" column="cancel_time"/>
+        <result property="estimatedDeliveryTime" column="estimated_delivery_time"/>
+        <result property="deliveryStatus" column="delivery_status"/>
+        <result property="deliveryTime" column="delivery_time"/>
+        <result property="packAmount" column="pack_amount"/>
+        <result property="tablewareNumber" column="tableware_number"/>
+        <result property="tablewareStatus" column="tableware_status"/>
+        <collection property="orderDetailList" ofType="com.sky.entity.OrderDetail">
+            <id property="id" column="detailId"/>
+            <result property="orderId" column="order_id"/>
+            <result property="name" column="name"/>
+            <result property="image" column="image"/>
+            <result property="dishId" column="dish_id"/>
+            <result property="setmealId" column="setmeal_id"/>
+            <result property="dishFlavor" column="dish_flavor"/>
+            <result property="number" column="detailsNumber"/>
+            <result property="amount" column="amount"/>
+        </collection>
+     </resultMap>
+
+    <select id="select" resultMap="Orders">
+        select *,od.number as detailsNumber,od.id as detailId from orders as o left join order_detail as od on o.id=od.order_id
+        <where>
+            <if test=" userId !=null ">and o.user_id=#{userId}</if>
+            <if test=" number !=null and number!='' ">and o.number=#{number}</if>
+            <if test=" phone !=null and phone!='' ">and o.phone=#{phone}</if>
+            <if test=" status !=null and status!='' ">and o.status=#{status}</if>
+            <if test=" beginTime !=null and endTime !=null ">and o.order_time between #{beginTime} and #{endTime} </if>
+        </where>
+        order by o.order_time desc
+    </select>
 </mapper>
