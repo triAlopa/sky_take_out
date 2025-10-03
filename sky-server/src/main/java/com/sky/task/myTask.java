@@ -17,7 +17,7 @@ public class myTask {
     @Autowired
     private OrderMapper orderMapper;
 
-    @Scheduled(cron = "0 * * * * ?")
+    //@Scheduled(cron = "0 * * * * ?") TODO
     public void executedPayStatus() {
         log.info("在{}检测订单支付状态任务执行了:", new Date());
 
