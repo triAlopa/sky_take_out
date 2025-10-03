@@ -19,3 +19,7 @@ sky:
   wechat:
     appid: wx5344f8835335aca8
     secret: aefd77fc48e6506583a776e0bbc6256d
+  shop:
+    address: 北京市海淀区上地十街10号
+  baidu:
+    ak: CRAZYTUESDayKFCVIVO50

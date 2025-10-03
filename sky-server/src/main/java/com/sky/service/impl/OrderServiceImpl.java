@@ -14,7 +14,6 @@ import com.sky.exception.OrderBusinessException;
 import com.sky.exception.ShoppingCartBusinessException;
 import com.sky.mapper.*;
 import com.sky.result.PageResult;
-import com.sky.result.Result;
 import com.sky.service.OrderService;
 import com.sky.utils.HttpClientUtil;
 import com.sky.utils.WeChatPayUtil;
@@ -22,18 +21,14 @@ import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
-import io.swagger.annotations.ApiOperation;
+import com.sky.webwocket.WebSocketServer;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,6 +50,8 @@ public class OrderServiceImpl implements OrderService {
     private UserMapper userMapper;
     @Autowired
     private WeChatPayUtil weChatPayUtil;
+    @Autowired
+    private WebSocketServer webSocketServer;
     @Value("${sky.shop.address}")
     private String shopAddress;
 
@@ -91,9 +88,9 @@ public class OrderServiceImpl implements OrderService {
         //用户经纬度坐标
         String userLngLat = lat + "," + lng;
 
-        map.put("origin",shopLngLat);
-        map.put("destination",userLngLat);
-        map.put("steps_info","0");
+        map.put("origin", shopLngLat);
+        map.put("destination", userLngLat);
+        map.put("steps_info", "0");
 
         //路线规划
         String json = HttpClientUtil.doGet("https://api.map.baidu.com/directionlite/v1/driving", map);
@@ -105,7 +102,7 @@ public class OrderServiceImpl implements OrderService {
         JSONObject result = jsonObject.getJSONObject("result");
         JSONArray routes = (JSONArray) result.get("routes");
         Integer distance = (Integer) ((JSONObject) routes.get(0)).get("distance");
-        if(distance>5000){
+        if (distance > 5000) {
             throw new OrderBusinessException("超出配送范围");
         }
 
@@ -194,7 +191,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderPaymentVO payment(OrdersPaymentDTO ordersPaymentDTO) throws Exception {
         // 当前登录用户id
         Long userId = BaseContext.getCurrentId();
-        User user = userMapper.getById(userId);
+
 
      /*   //调用微信支付接口，生成预支付交易单
         JSONObject jsonObject = weChatPayUtil.pay(
@@ -214,6 +211,17 @@ public class OrderServiceImpl implements OrderService {
         vo.setPackageStr(jsonObject.getString("package"));
 
         paySuccess(ordersPaymentDTO.getOrderNumber());
+
+        Orders orderDb = orderMapper.getByNumber(ordersPaymentDTO.getOrderNumber());
+
+        //向商家来单提醒
+        Map map = new HashMap<>();
+        map.put("type",1); //1.来单提醒 2.用户催单
+        map.put("orderId", orderDb.getId());
+        map.put("content","用户下单啦,订单号:"+ordersPaymentDTO.getOrderNumber());
+
+        String jsonString = JSON.toJSONString(map);
+        webSocketServer.sendToAllClient(jsonString);
 
         return vo;
     }
@@ -348,7 +356,15 @@ public class OrderServiceImpl implements OrderService {
         if (order.getStatus() == Orders.PENDING_PAYMENT || order.getPayStatus() == Orders.UN_PAID) {
             throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
         }
-        //TODO 发送对商家提醒
+        // 发送对商家提醒
+        //向商家来单提醒
+        Map map = new HashMap<>();
+        map.put("type",2); //1.来单提醒 2.用户催单
+        map.put("orderId", order.getId());
+        map.put("content","用户催单啦,订单号:"+order.getNumber());
+
+        String jsonString = JSON.toJSONString(map);
+        webSocketServer.sendToAllClient(jsonString);
 
     }
 
