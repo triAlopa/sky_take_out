@@ -12,6 +12,7 @@ import org.apache.ibatis.annotations.Select;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface SetmealMapper {
@@ -77,4 +78,11 @@ public interface SetmealMapper {
      */
     @Select("select * from setmeal where category_id = #{id} and status=1")
     List<Setmeal> selectByCategoryId(Integer id);
+
+    /**
+     * 查询套餐总览 起售 停售
+     * @param map
+     * @return
+     */
+    Integer queryOverviewSetmealsByMap(Map map);
 }

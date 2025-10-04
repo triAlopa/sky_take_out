@@ -30,4 +30,10 @@
         </where>
         order by s.create_time desc
     </select>
+    <select id="queryOverviewSetmealsByMap" resultType="java.lang.Integer">
+        select  count(*) from setmeal s
+        <where>
+            <if test="status != null">and s.status=#{status}</if>
+        </where>
+    </select>
 </mapper>

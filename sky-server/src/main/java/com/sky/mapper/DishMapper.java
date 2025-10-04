@@ -86,5 +86,11 @@ public interface DishMapper {
     List<DishVO> listWithFlavor(Long categoryId);
 
 
-
+    /**
+     * 查询菜品总览
+     * @param status
+     * @return
+     */
+    @Select("select count(id) from dish where status = #{status}")
+    Integer queryOverviewDishesByStatus(Integer status);
 }
